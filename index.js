@@ -5,7 +5,6 @@ const cors = require('cors')
 const mongoose = require('mongoose')
 const app = express()
 const password = process.argv[2]
-
 const Person = require('./models/person')
 
 app.use(cors())
@@ -15,29 +14,6 @@ app.use(express.static('dist'))
 morgan.token('body', (req) => JSON.stringify(req.body))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-
-let persons = [
-    { 
-      "id": 1,
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": 2,
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": 3,
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": 4,
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
 
 app.get('/', (request, response) => {
   response.send('<h1>Hello World!</h1>')
@@ -76,13 +52,21 @@ app.get('/api/persons/:id', (request, response) => {
     })
 })
 
-
 app.delete('/api/persons/:id', (request, response) => {
-  Person.findByIdAndRemove(request.params.id)
-    .then(() => {
-      response.status(204).end()
+  const id = request.params.id
+
+  Person.findByIdAndDelete(id)
+    .then(result => {
+      if (result) {
+        response.status(204).end()
+      } else {
+        response.status(404).json({ error: 'person not found' })
+      }
     })
-    .catch(error => response.status(400).json({ error: 'malformed id' }))
+    .catch(error => {
+      console.error(error)
+      response.status(500).json({ error: 'internal server error' })
+    })
 })
 
 app.post('/api/persons', (request, response) => {
