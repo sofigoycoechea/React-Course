@@ -93,6 +93,22 @@ app.post('/api/persons', (request, response) => {
   response.json(person)
 })
 
+app.put('/api/persons/:id', (request, response) => {
+  const id = Number(request.params.id)
+  const body = request.body
+
+  const personIndex = persons.findIndex(p => p.id === id)
+  if (personIndex === -1) {
+    return response.status(404).json({ error: 'person not found' })
+  }
+
+  // Actualizamos solo el número (o también el nombre si quieres)
+  const updatedPerson = { ...persons[personIndex], number: body.number }
+  persons[personIndex] = updatedPerson
+
+  response.json(updatedPerson)
+})
+
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
 }
