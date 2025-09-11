@@ -14,7 +14,6 @@ app.use(express.static('dist'))
 morgan.token('body', (req) => JSON.stringify(req.body))
 app.use(morgan(':method :url :status :res[content-length] - :response-time ms :body'))
 
-
 app.get('/', (request, response) => {
   response.send('<h1>Hello World!</h1>')
 })
@@ -35,7 +34,7 @@ app.get('/api/info', (request, response) => {
   })
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
   const id = request.params.id
 
   Person.findById(id)
@@ -46,10 +45,7 @@ app.get('/api/persons/:id', (request, response) => {
         response.status(404).end()
       }
     })
-    .catch(error => {
-      console.error(error)
-      response.status(400).send({ error: 'malformed id' })
-    })
+    .catch(error => next(error))
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -60,12 +56,12 @@ app.delete('/api/persons/:id', (request, response) => {
       if (result) {
         response.status(204).end()
       } else {
-        response.status(404).json({ error: 'person not found' })
+        response.status(404).end()
       }
     })
     .catch(error => {
       console.error(error)
-      response.status(500).json({ error: 'internal server error' })
+      response.status(500).end()
     })
 })
 
@@ -98,8 +94,9 @@ app.put('/api/persons/:id', (request, response) => {
       if (updatedPerson) response.json(updatedPerson)
       else response.status(404).end()
     })
-    .catch(error => response.status(400).json({ error: error.message }))
+    .catch(error => next(error))
 })
+
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: 'unknown endpoint' })
@@ -111,3 +108,17 @@ const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
+
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
+
+// este debe ser el último middleware cargado, ¡también todas las rutas deben ser registrada antes que esto!
+app.use(errorHandler)
