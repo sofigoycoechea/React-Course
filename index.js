@@ -2,9 +2,7 @@ require('dotenv').config()
 const express = require('express')
 const morgan = require('morgan') 
 const cors = require('cors')
-const mongoose = require('mongoose')
 const app = express()
-const password = process.argv[2]
 const Person = require('./models/person')
 
 app.use(cors())
