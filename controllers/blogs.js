@@ -49,7 +49,7 @@ blogsRouter.delete('/:id', (request, response, next) => {
 blogsRouter.post('/', (request, response, next) => {
   const body = request.body
 
-  if (!body.title || !body.author || !body.url || !body.likes) {
+  if (!body.title || !body.author || !body.url || body.likes === undefined) {
     return response.status(400).json({ error: 'title or author or url or likes missing' })
   }
 
