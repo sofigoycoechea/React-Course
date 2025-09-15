@@ -63,18 +63,26 @@ peopleRouter.post('/', async (request, response, next) => {
 })
 
 peopleRouter.put('/:id', async (request, response, next) => {
-  const { name, number } = request.body
+  try {
+    const { name, number } = request.body
 
-  const updatedPerson = await Person.findByIdAndUpdate(
-    request.params.id,
-    { name, number },
-    { new: true, runValidators: true, context: 'query' }
-  )
-  if (updatedPerson) {
-    response.json(updatedPerson)
-  }
-  else {
-    response.status(404).end()
+    if (!name && !number) {
+      return response.status(400).json({ error: 'name or number is required' })
+    }
+
+    const updatedPerson = await Person.findByIdAndUpdate(
+      request.params.id,
+      { name, number },
+      { new: true, runValidators: true, context: 'query' }
+    )
+    
+    if (updatedPerson) {
+      response.json(updatedPerson)
+    } else {
+      response.status(404).end()
+    }
+  } catch(exception) {
+    next(exception)
   }
 })
 

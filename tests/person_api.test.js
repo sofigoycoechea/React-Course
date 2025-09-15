@@ -127,6 +127,116 @@ describe('adding a new person', () => {
   })
 })
 
+describe('updating a person', () => {
+  test('succeeds with valid data', async () => {
+    const peopleAtStart = await helper.peopleInDb()
+    const personToUpdate = peopleAtStart[0]
+
+    const updatedData = {
+      name: 'Sofia Updated',
+      number: '9999999999'
+    }
+
+    const resultPerson = await api
+      .put(`/api/people/${personToUpdate.id}`)
+      .send(updatedData)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    assert.strictEqual(resultPerson.body.name, updatedData.name)
+    assert.strictEqual(resultPerson.body.number, updatedData.number)
+  })
+
+  test('succeeds with only number update', async () => {
+    const peopleAtStart = await helper.peopleInDb()
+    const personToUpdate = peopleAtStart[0]
+
+    const updatedData = {
+      number: '8888888888'
+    }
+
+    const resultPerson = await api
+      .put(`/api/people/${personToUpdate.id}`)
+      .send(updatedData)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    assert.strictEqual(resultPerson.body.name, personToUpdate.name) // Nombre no cambió
+    assert.strictEqual(resultPerson.body.number, updatedData.number) // Número sí cambió
+  })
+
+  test('succeeds with only name update', async () => {
+    const peopleAtStart = await helper.peopleInDb()
+    const personToUpdate = peopleAtStart[0]
+
+    const updatedData = {
+      name: 'Manuel Updated'
+    }
+
+    const resultPerson = await api
+      .put(`/api/people/${personToUpdate.id}`)
+      .send(updatedData)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    assert.strictEqual(resultPerson.body.name, updatedData.name) // Nombre sí cambió
+    assert.strictEqual(resultPerson.body.number, personToUpdate.number) // Número no cambió
+  })
+
+  test('fails with statuscode 400 if no data provided', async () => {
+    const peopleAtStart = await helper.peopleInDb()
+    const personToUpdate = peopleAtStart[0]
+
+    await api
+      .put(`/api/people/${personToUpdate.id}`)
+      .send({})
+      .expect(400)
+  })
+
+  test('fails with statuscode 400 if name is too short', async () => {
+    const peopleAtStart = await helper.peopleInDb()
+    const personToUpdate = peopleAtStart[0]
+
+    const updatedData = {
+      name: 'Jo',
+      number: '7777777777'
+    }
+
+    await api
+      .put(`/api/people/${personToUpdate.id}`)
+      .send(updatedData)
+      .expect(400)
+  })
+
+  test('fails with statuscode 404 if person does not exist', async () => {
+    const validNonexistingId = await helper.nonExistingId()
+
+    const updatedData = {
+      name: 'Non Existent',
+      number: '6666666666'
+    }
+
+    await api
+      .put(`/api/people/${validNonexistingId}`)
+      .send(updatedData)
+      .expect(404)
+  })
+
+  test('fails with statuscode 400 if id is invalid', async () => {
+    const invalidId = '5a3d5da59070081a82a3445'
+
+    const updatedData = {
+      name: 'Invalid ID',
+      number: '5555555555'
+    }
+
+    await api
+      .put(`/api/people/${invalidId}`)
+      .send(updatedData)
+      .expect(400)
+  })
+})
+
 describe('deleting a person', () => {
   test('succeeds with status code 204 if id is valid', async () => {
     const peopleAtStart = await helper.peopleInDb()
