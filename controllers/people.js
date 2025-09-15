@@ -52,7 +52,7 @@ peopleRouter.post('/', async (request, response, next) => {
   })
 
   const savedPerson = await person.save()
-  response.json(savedPerson)
+  response.status(201).json(savedPerson)
 })
 
 peopleRouter.put('/:id', async (request, response, next) => {
