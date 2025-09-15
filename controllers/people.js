@@ -1,8 +1,5 @@
 const peopleRouter = require('express').Router()
 const Person = require('../models/person')
-const config = require('../utils/config')
-const logger = require('../utils/logger')
-
 
 
 peopleRouter.get('/', async (request, response) => {
@@ -20,22 +17,28 @@ peopleRouter.get('/info', async (request, response) => {
 })
 
 peopleRouter.get('/:id', async (request, response, next) => {
-  const id = request.params.id
-
-  const person = await Person.findById(id)
-  if (person) {
-    response.json(person)
-  } else {
-    response.status(404).end()
+  try {
+    const person = await Person.findById(request.params.id)
+    if (person) {
+      response.json(person)
+    } else {
+      response.status(404).end()
+    }
+  } catch(exception) {
+    next(exception)
   }
 })
 
 peopleRouter.delete('/:id', async (request, response, next) => {
-  const result = await Person.findByIdAndDelete(request.params.id)
-  if (result) {
-    response.status(204).end()
-  } else {
-    response.status(404).end()
+  try { 
+    const result = await Person.findByIdAndDelete(request.params.id)
+    if (result) {
+      response.status(204).end()
+    } else {
+      response.status(404).end()
+    }
+  } catch(exception) {
+    next(exception)
   }
 })
 
@@ -51,8 +54,12 @@ peopleRouter.post('/', async (request, response, next) => {
     number: body.number
   })
 
-  const savedPerson = await person.save()
-  response.status(201).json(savedPerson)
+  try {
+    const savedPerson = await person.save()
+    response.status(201).json(savedPerson)
+  } catch(exception) {
+    next(exception)
+  }
 })
 
 peopleRouter.put('/:id', async (request, response, next) => {
