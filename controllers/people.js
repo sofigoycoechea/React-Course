@@ -5,49 +5,41 @@ const logger = require('../utils/logger')
 
 
 
-peopleRouter.get('/', (request, response) => {
-  Person.find({}).then(people => {
-    response.json(people)
-  })
+peopleRouter.get('/', async (request, response) => {
+  const people = await Person.find({})
+  response.json(people)
 })
 
-peopleRouter.get('/info', (request, response) => {
-  Person.countDocuments({}).then(count => {
-    const date = new Date()
-    response.send(`
-      <p>Phonebook has info for ${count} people</p>
-      <p>${date}</p>
-    `)
-  })
+peopleRouter.get('/info', async (request, response) => {
+  const count = await Person.countDocuments({})
+  const date = new Date()
+  response.send(`
+    <p>Phonebook has info for ${count} people</p>
+    <p>${date}</p>
+  `)
 })
 
-peopleRouter.get('/:id', (request, response, next) => {
+peopleRouter.get('/:id', async (request, response, next) => {
   const id = request.params.id
 
-  Person.findById(id)
-    .then(person => {
-      if (person) {
-        response.json(person)
-      } else {
-        response.status(404).end()
-      }
-    })
-    .catch(error => next(error))
+  const person = await Person.findById(id)
+  if (person) {
+    response.json(person)
+  } else {
+    response.status(404).end()
+  }
 })
 
-peopleRouter.delete('/:id', (request, response, next) => {
-  Person.findByIdAndDelete(request.params.id)
-    .then(result => {
-      if (result) {
-        response.status(204).end()
-      } else {
-        response.status(404).end()
-      }
-    })
-    .catch(error => next(error))
+peopleRouter.delete('/:id', async (request, response, next) => {
+  const result = await Person.findByIdAndDelete(request.params.id)
+  if (result) {
+    response.status(204).end()
+  } else {
+    response.status(404).end()
+  }
 })
 
-peopleRouter.post('/', (request, response, next) => {
+peopleRouter.post('/', async (request, response, next) => {
   const body = request.body
 
   if (!body.name || !body.number) {
@@ -59,24 +51,24 @@ peopleRouter.post('/', (request, response, next) => {
     number: body.number
   })
 
-  person.save()
-    .then(savedPerson => response.json(savedPerson))
-    .catch(error => next(error))
+  const savedPerson = await person.save()
+  response.json(savedPerson)
 })
 
-peopleRouter.put('/:id', (request, response, next) => {
+peopleRouter.put('/:id', async (request, response, next) => {
   const { name, number } = request.body
 
-  Person.findByIdAndUpdate(
+  const updatedPerson = await Person.findByIdAndUpdate(
     request.params.id,
     { name, number },
     { new: true, runValidators: true, context: 'query' }
   )
-    .then(updatedPerson => {
-      if (updatedPerson) response.json(updatedPerson)
-      else response.status(404).end()
-    })
-    .catch(error => next(error))
+  if (updatedPerson) {
+    response.json(updatedPerson)
+  }
+  else {
+    response.status(404).end()
+  }
 })
 
 module.exports = peopleRouter
