@@ -2,12 +2,13 @@ const blogsRouter = require('express').Router()
 const Blog = require('../models/blog')
 const config = require('../utils/config')
 const logger = require('../utils/logger')
+const User = require('../models/user')
+const jwt = require('jsonwebtoken')
 
 
-blogsRouter.get('/', (request, response) => {
-  Blog.find({}).then(blogs => {
-    response.json(blogs)
-  })
+blogsRouter.get('/', async (request, response) => {
+  const blogs = await Blog.find({}).populate('user', { username: 1, name: 1 })
+  response.json(blogs)
 })
 
 blogsRouter.get('/info', (request, response) => {
@@ -34,20 +35,33 @@ blogsRouter.get('/:id', (request, response, next) => {
     .catch(error => next(error))
 })
 
-blogsRouter.delete('/:id', (request, response, next) => {
-  Blog.findByIdAndDelete(request.params.id)
-    .then(result => {
-      if (result) {
-        response.status(204).end()
-      } else {
-        response.status(404).end()
-      }
-    })
-    .catch(error => next(error))
+blogsRouter.delete('/:id', async (request, response, next) => {
+  try {
+    const user = request.user
+    const blog = await Blog.findById(request.params.id)
+    
+    if (!blog) {
+      return response.status(404).json({ error: 'blog not found' })
+    }
+
+    if (blog.user.toString() !== user.id.toString()) {
+      return response.status(403).json({ error: 'only the creator can delete this blog' })
+    }
+
+    await Blog.findByIdAndDelete(request.params.id)
+    
+    user.blogs = user.blogs.filter(blogId => blogId.toString() !== request.params.id)
+    await user.save()
+
+    response.status(204).end()
+  } catch (error) {
+    next(error)
+  }
 })
 
-blogsRouter.post('/', (request, response, next) => {
+blogsRouter.post('/', async (request, response, next) => {
   const body = request.body
+  const user = request.user //Podemos usar el userExtractor para obtener el usuario
 
   if (!body.title || !body.author || !body.url || body.likes === undefined) {
     return response.status(400).json({ error: 'title or author or url or likes missing' })
@@ -58,11 +72,13 @@ blogsRouter.post('/', (request, response, next) => {
     author: body.author,
     url: body.url,
     likes: body.likes,
+    user: user.id
   })
 
-  blog.save()
-    .then(savedBlog => response.json(savedBlog))
-    .catch(error => next(error))
+  const savedBlog = await blog.save()
+  user.blogs = user.blogs.concat(savedBlog._id)
+  await user.save()
+  response.status(201).json(savedBlog)
 })
 
 blogsRouter.put('/:id', (request, response, next) => {
